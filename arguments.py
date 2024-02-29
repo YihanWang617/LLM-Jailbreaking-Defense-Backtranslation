@@ -1,0 +1,88 @@
+import argparse
+import math
+
+
+def add_judge_args(parser):
+    parser.add_argument('--judge_model', nargs='+',
+                        default=['gpt-4'],
+                        choices=['gpt-3.5-turbo', 'gpt-4','gpt-4-1106-preview',
+                                 'gpt-4_quality', 'no-judge', 'matching',
+                                 'original-matching', 'openai_policy_gpt4_judge'])
+    parser.add_argument('--judge_max_n_tokens', type=int, default=10,
+                        help='Maximum number of tokens for the judge.')
+    parser.add_argument('--judge_temperature', type=float, default=0,
+                        help='Temperature to use for judge.')
+
+
+def add_key_args(parser):
+    parser.add_argument('--goal_key', type=str, default='goal')
+    parser.add_argument('--target_key', type=str, default='target')
+    parser.add_argument('--prompt_key', type=str, default='jailbreaking')
+    parser.add_argument('--response_key', type=str, default='output')
+    parser.add_argument('--reference_key', type=str, default=None)
+    parser.add_argument('--jailbreaking_key', type=str, default='jailbreaking')
+    parser.add_argument('--existing_response_key', type=str, default='response')
+    parser.add_argument('--reuse_response', action='store_true')
+
+
+def add_target_model_args(parser):
+    parser.add_argument('--target_model', type=str, default='vicuna',
+                        help='Name of target model.',
+                        choices=['vicuna', # by default, it's "lmsys/vicuna-13b-v1.5"
+                                 'vicuna-13b-v1.5',
+                                 'gpt-4',
+                                 'gpt-3.5-turbo', # by default, it's "gpt-3.5-turbo-0613"
+                                 'gpt-3.5-turbo-0301', 'gpt-3.5-turbo-0613',
+                                 'llama-2',  # by default, it's "meta-llama/Llama-2-7b-chat-hf"
+                                 'llama-2-13b',
+                        ])
+    parser.add_argument('--target_max_n_tokens', type=int, default=150,
+                        help='Maximum number of generated tokens for the target.')
+    parser.add_argument('--max_memory', type=int, default=None)
+    parser.add_argument('--target_model_batch_size', type=int, default=2)
+    parser.add_argument('--no_system_prompt', '--no_system_prompt', action='store_true')
+
+
+def add_defense_args(parser):
+    parser.add_argument('--defense_method', type=str, default='None',
+                        help='Defense method applied on the target model. '
+                        'No defense by default, choose from "None", "smoothLLM", '
+                        '"backtranslation", '
+                        '"backtranslation_with_threshold_[a negative float numer]", '
+                        '"self_check_response", '
+                        '"paraphrase_prompt"]')
+    parser.add_argument('--backtranslation_threshold', type=float, default=-math.inf)
+    parser.add_argument('--backtranslation_infer_model', type=str, default='vicuna')
+    parser.add_argument('--paraphrase_model', type=str, default='gpt-3.5-turbo')
+    parser.add_argument('--return_new_response_anyway', action='store_true') # turned off by default
+    parser.add_argument('--self_check_threshold', type=int, default=5)
+
+
+def add_data_args(parser):
+    parser.add_argument('--load_data_path', type=str)
+    parser.add_argument('--save_result_path', type=str)
+    parser.add_argument('--num_examples', type=int, default=None,
+                        help='Number of examples to use. By default, use all the provided examples.')
+    parser.add_argument('--starting_index', '--start', type=int, default=0,
+                        help='Index of the starting example.')
+
+
+def parse_args(target_model=False, defense=False, judge=False):
+    parser = argparse.ArgumentParser()
+
+    add_data_args(parser)
+    add_key_args(parser)
+    if target_model:
+        add_target_model_args(parser)
+    if defense:
+        add_defense_args(parser)
+    if judge:
+        add_judge_args(parser)
+
+    # Misc
+    parser.add_argument('--verbose', action='store_true')
+    parser.add_argument('--force_overwrite', action='store_true')
+
+    args = parser.parse_args()
+    print('Arguments:', args)
+    return args

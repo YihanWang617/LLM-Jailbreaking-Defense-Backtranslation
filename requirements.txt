@@ -1,0 +1,17 @@
+torch>=2.0
+fschat>=0.2.33
+pandas>=2.1
+seaborn>=0.13
+matplotlib>=3.8.2
+numpy>=1.26
+datasets==2.14.0
+evaluate>=0.4.1
+anthropic>=0.7.6
+google-generativeai>=0.2.2
+openai==0.28
+chardet>=5.2.0
+accelerate>=0.24
+bitsandbytes>=0.41
+scipy>=1.11
+ml_collections>=0.1.1
+nltk>=3.8
