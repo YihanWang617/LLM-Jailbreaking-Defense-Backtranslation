@@ -7,6 +7,8 @@ from language_models import GPT
 
 
 def load_judge(args, goal=None):
+    if goal is None:
+        goal = args.goal
     if 'quality' in args.judge_model:
         if "gpt" in args.judge_model:
             return GPTQualityJudge(args, goal)

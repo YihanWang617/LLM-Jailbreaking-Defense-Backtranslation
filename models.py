@@ -70,15 +70,15 @@ def get_model_path_and_template(model_name):
         },
         "gpt-3.5-turbo": {
             "path": "gpt-3.5-turbo-0613",
-            "template": "gpt-3.5-turbo-0613"
+            "template": "gpt-3.5-turbo"
         },
         "gpt-3.5-turbo-0301": {
             "path":"gpt-3.5-turbo-0301",
-            "template":"gpt-3.5-turbo-0301"
+            "template":"gpt-3.5-turbo"
         },
         "gpt-3.5-turbo-0613": {
             "path":"gpt-3.5-turbo-0613",
-            "template":"gpt-3.5-turbo-0613"
+            "template":"gpt-3.5-turbo"
         },
         "vicuna":{
             "path": "lmsys/vicuna-13b-v1.5",

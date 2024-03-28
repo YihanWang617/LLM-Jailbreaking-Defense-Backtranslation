@@ -36,6 +36,7 @@ class ParaphraseDefense(DefenseBase):
                 response = target_lm.get_response([prompt], verbose=verbose)[0]
             return response
         else:
-            paraphrase_prompt = "\n".join(paraphrase_prompt.split('\n')[1:]) # remove useless parts.
+            if "\n" in paraphrase_prompt:
+                paraphrase_prompt = "\n".join(paraphrase_prompt.split('\n')[1:]) # remove useless parts.
             paraphrase_response = target_lm.get_response([paraphrase_prompt], verbose=verbose)[0]
             return paraphrase_response

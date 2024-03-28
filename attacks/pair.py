@@ -169,7 +169,7 @@ if __name__ == '__main__':
         "--target_model",
         default = "vicuna",
         help = "Name of target model.",
-        choices=["vicuna", "llama-2", "llama-2-13b", "gpt-3.5-turbo", "gpt-4",
+        choices=["vicuna", "llama-2", "llama-2-13b", "gpt-3.5-turbo", "gpt-3.5-turbo-0613","gpt-4",
                  "claude-instant-1","claude-2", "palm-2"]
     )
     parser.add_argument(
@@ -245,7 +245,7 @@ if __name__ == '__main__':
     )
     ##################################################
 
-    parser.add_argument('--save_output_path', type=float)
+    parser.add_argument('--save_output_path', type=str)
     parser.add_argument('--max_memory', type=int, default=None)
     parser.add_argument('--paraphrase_model', type=str, default='gpt-3.5-turbo')
     parser.add_argument('--self_check_threshod', type=int, default=5)
