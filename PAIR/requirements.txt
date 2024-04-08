@@ -1,4 +1,4 @@
-fschat==0.2.23
+fschat==0.2.33
 pandas
 seaborn
 matplotlib
@@ -6,5 +6,5 @@ numpy
 datasets
 evaluate
 anthropic
-google-generativeai
 openai
+wandb

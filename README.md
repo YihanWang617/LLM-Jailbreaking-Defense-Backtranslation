@@ -17,15 +17,10 @@ Bibtex for our [paper](https://arxiv.org/abs/2402.16459):
 
 ## Setup
 
-Install Python dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-Set an OpenAI API key in the environment variable:
-```
-export OPENAI_API_KEY={key}
-```
+**Our implementation is based on the [`llm-jailbreaking-defense`](https://github.com/YihanWang617/llm-jailbreaking-defense) library developed by us.**
+The library provides general interfaces for wrapping a LLM with a jailbreaking defense
+including the defense by backtranslation we proposed.
+Please install the library first following its [setup guide](https://github.com/YihanWang617/llm-jailbreaking-defense?tab=readme-ov-file#setup).
 
 ## Attacks
 
@@ -72,21 +67,21 @@ cd GCG/experiments
 # (2 GPUs are needed for the 2 models, respectively.)
 python main.py \
 --config configs/transfer_vicuna.py \
---config.train_data ../data/advbench/harmful_behaviors.csv \
---config.result_prefix output/attacks/gcg/gcg_transfer_vicuna_1 \
+--config.train_data ../../data/harmful_behaviors_custom.csv \
+--config.result_prefix output/attacks/gcg/gcg_transfer_vicuna_1
 
 # Vicuna-7B and Vicuna-13B, with the second random seed
 # (2 GPUs are needed for the 2 models, respectively.)
 python main.py \
 --config configs/transfer_vicuna.py \
---config.train_data ../data/advbench/harmful_behaviors.csv \
+--config.train_data ../../data/harmful_behaviors_custom.csv \
 --config.result_prefix output/attacks/gcg/gcg_transfer_vicuna_2 \
 
 # Vicuna-7B, Vicuna-13B, Guanaco-7B, Guanaco-13B
 # (4 GPUs are needed for the 4 models, respectively.)
 python main.py \
 --config configs/transfer_vicuna_guanaco.py \
---config.train_data ../data/advbench/harmful_behaviors.csv \
+--config.train_data ../../data/harmful_behaviors_custom.csv \
 --config.result_prefix output/attacks/gcg/gcg_transfer_vicuna_guanaco
 ```
 
@@ -136,8 +131,8 @@ See options for `--defense_method` in the "Inference" section below.
 
 ```bash
 python -m attacks.pair \
---harmful_behavior_path ./data/harmful_behaviors_custom.json \
---save_output_path {attack_output} \
+--load_data_path ./data/harmful_behaviors_custom.json \
+--save_result_path {attack_output} \
 --target_model {target_model} \
 --defense_method {defense_method}
 ```
@@ -148,7 +143,7 @@ Run the AutoDAN attack by:
 
 ```bash
 python attacks/autodan.py \
---harmful_behavior_path data/harmful_behaviors_custom.json \
+--harmful_behavior_path ./data/harmful_behaviors_custom.json \
 --save_output_path {attack_output} \
 --target_model {target_model}
 ```
@@ -160,6 +155,9 @@ are generated using `vicuna-13b-v1.5` as the target model.
 ## Inference
 
 Run inference by:
+To run attack and inference for GCG, `fschat==0.2.20` is required
+(a separate virtual environment is recommended).
+
 ```bash
 python run_inference.py \
 --load_data_path {attack_output} \
@@ -175,10 +173,10 @@ python run_inference.py \
 * `{target_model}` can be chosen from
 `vicuna-13b-v1.5`, `llama-2-13b`, `gpt-3.5-turbo` and `gpt-3.5-turbo-0301` (for AutoDAN).
 * `{defense_method}` can be chosen from
-`None` (No defense), `smoothLLM`, `paraphrase_prompt` (Paraphrasing),
-`self_check_response` (Response check), and `backtranslation`.
+`None` (No defense), `SmoothLLM`, `paraphrase_prompt` (Paraphrasing),
+`response_check` (Response check), and `backtranslation`.
   * For `backtranslation`, we can specify the threshold $\gamma$ by setting `--backtranslation_threshold {gamma}`.
-  * For `self_check_response`, we can specify the threshold by setting `--self_check_threshold {threshold}`.
+  * For `response_check`, we can specify the threshold by setting `--response_check_threshold {threshold}`.
 * `{key_of_jailbreaking_prompt}` is the json key of jailbreaking prompt in `{attack_output}`
 * `{target_max_n_tokens}` is the max number of tokens in inference output.
   * For AdvBench data from `data/harmful_behaviors_custom.json`, we use `--target_max_n_tokens 300`.
@@ -186,20 +184,28 @@ python run_inference.py \
 
 To run inference without jailbreaking, set `--prompt_key goal` and `--load_data_path data/harmful_behaviors_custom.json`.
 
-## Judges
+## Judge
 
 Finally, we run a judge on the inference output:
 
 ```bash
 python run_judge.py \
---judge_model {judge_model} \
+--judge_name {judge_model} \
 --load_data_path {inference_output} \
 --save_result_path {judge_output} \
 --judge_max_n_tokens {max_n_tokens} \
+--goal_key {goal_key} \
+--response_key {response_key} \
 --verbose
 ```
 
-Options for `judge_model` include:
-* `gpt-4`: The GPT-4 judge introduced in [PAIR](https://github.com/patrickrchao/JailbreakingLLMs/blob/main/judges.py) with `--judge_max_n_tokens 10`.
-* `gpt-4_quality`: The GPT-4 judge used to rate the quality of a response, introduced in [MT-Bench](https://github.com/lm-sys/FastChat/tree/main/fastchat/llm_judge) with `--judge_max_n_tokens 2048`.
-* `openai_policy_gpt4_judge`: The [GPT-4 judge](https://github.com/LLM-Tuning-Safety/LLMs-Finetuning-Safety/blob/main/gpt-3.5/eval_utils/openai_policy_gpt4_judge.py) adopted by [PAP](https://github.com/CHATS-lab/persuasive_jailbreaker) with `--judge_max_n_tokens 1024`.
+`judge_name` is the name of the judge method with an optional judge model: `[judge_method]@[judge_model]`.
+Options for `judge_method` include:
+* `pair`: The judge introduced in [PAIR](https://github.com/patrickrchao/JailbreakingLLMs/blob/main/judges.py) with `--judge_max_n_tokens 10`.
+* `quality`: The judge used to rate the quality of a response, introduced in [MT-Bench](https://github.com/lm-sys/FastChat/tree/main/fastchat/llm_judge) with `--judge_max_n_tokens 2048`.
+* `openai_policy`: The [judge](https://github.com/LLM-Tuning-Safety/LLMs-Finetuning-Safety/blob/main/gpt-3.5/eval_utils/openai_policy_gpt4_judge.py) adopted by [PAP](https://github.com/CHATS-lab/persuasive_jailbreaker) with `--judge_max_n_tokens 1024`.
+* `gcg_matching`: THe judge adopted by [GCG](https://github.com/llm-attacks/llm-attacks).
+
+`goal_key` and `response_key` are the keys of jailbreaking attack goals and responses to be judged in the inference output json file.
+
+Options for `judge_model` include `gpt-4` and `gpt-3.5`.

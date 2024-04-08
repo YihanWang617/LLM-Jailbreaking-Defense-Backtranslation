@@ -1,12 +1,12 @@
 import argparse
-from system_prompts import get_attacker_system_prompt
-from loggers import WandBLogger
-from judges import load_judge
-from conversers import load_attack_and_target_models
-from common import process_target_response, get_init_msg, conv_template
+from llm_jailbreaking_defense.judges import load_judge
+from .system_prompts import get_attacker_system_prompt
+from .loggers import WandBLogger
+from .conversers import load_attack_and_target_models
+from .common import process_target_response, get_init_msg, conv_template
+
 
 def main(args):
-
     # Initialize models and logger
     system_prompt = get_attacker_system_prompt(
         args.goal,
@@ -14,7 +14,7 @@ def main(args):
     )
     attackLM, targetLM = load_attack_and_target_models(args)
 
-    judgeLM = load_judge(args)
+    judgeLM = load_judge(args.judge_name, args.goal)
 
     logger = WandBLogger(args, system_prompt)
 
@@ -85,7 +85,7 @@ if __name__ == '__main__':
         "--attack-model",
         default = "vicuna",
         help = "Name of attacking model.",
-        choices=["vicuna", "llama-2", "gpt-3.5-turbo", "gpt-4", "claude-instant-1","claude-2", "palm-2"]
+        choices=["vicuna", "llama-2", "gpt-3.5-turbo", "gpt-4", "claude-instant-1","claude-2"]
     )
     parser.add_argument(
         "--attack-max-n-tokens",
@@ -106,7 +106,7 @@ if __name__ == '__main__':
         "--target-model",
         default = "vicuna",
         help = "Name of target model.",
-        choices=["vicuna", "llama-2", "gpt-3.5-turbo", "gpt-4", "claude-instant-1","claude-2", "palm-2"]
+        choices=["vicuna", "llama-2", "gpt-3.5-turbo", "gpt-4", "claude-instant-1","claude-2"]
     )
     parser.add_argument(
         "--target-max-n-tokens",

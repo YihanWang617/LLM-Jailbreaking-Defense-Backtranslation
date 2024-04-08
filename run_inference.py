@@ -4,6 +4,7 @@ from tqdm.auto import tqdm
 
 from arguments import parse_args
 from utils import load_target_model, load_prompts, get_recursive_key
+import time
 
 
 def inference_on_data(args, data, prompt_key, target_model,
@@ -20,6 +21,7 @@ def inference_on_data(args, data, prompt_key, target_model,
         defense_method=defense_method, add_system_prompt=add_system_prompt)
 
     results = []
+    begin = time.time()
     for i, example in enumerate(tqdm(data, disable=verbose)):
         if verbose:
             print('*' * 80)
@@ -45,7 +47,7 @@ def inference_on_data(args, data, prompt_key, target_model,
 
         if verbose:
             print('\n' * 2)
-
+    print(f"time cost: {time.time() - begin}")
     return results
 
 

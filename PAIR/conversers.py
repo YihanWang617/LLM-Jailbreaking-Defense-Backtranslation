@@ -1,11 +1,9 @@
 
+from tqdm import tqdm
+from llm_jailbreaking_defense.models import load_indiv_model
 from . import common
 from .config import ATTACK_TEMP, ATTACK_TOP_P
-from tqdm import tqdm
-import sys
-sys.path.append("..")
-from jailbreakingDefense.utils import load_target_model
-from .models import load_indiv_model
+from .utils import load_target_model
 
 
 def load_attack_and_target_models(args):
@@ -97,7 +95,7 @@ class AttackLM():
                 batch = full_prompts_subset[i * self.batch_size:(i+1) * self.batch_size]
 
                 # Run a forward pass through the LLM for each perturbed copy
-                batch_outputs = self.model.batched_generate(batch, 
+                batch_outputs = self.model.batched_generate(batch,
                                                             max_n_tokens = self.max_n_tokens,
                                                             temperature = self.temperature,
                                                             top_p = self.top_p)

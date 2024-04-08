@@ -6,3 +6,5 @@ wandb
 *.un~
 output*
 results.json
+dist/
+build

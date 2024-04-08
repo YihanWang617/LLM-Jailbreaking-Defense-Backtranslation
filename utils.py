@@ -1,8 +1,7 @@
 import json
 import os
-from defenses import load_defense
-
-from models import TargetLM, DefensedTargetLM
+from llm_jailbreaking_defense import load_defense, TargetLM, DefendedTargetLM
+from llm_jailbreaking_defense.defenses import args_to_defense_config
 
 
 def load_target_model(args, target_model, target_max_n_tokens=150,
@@ -25,8 +24,10 @@ def load_target_model(args, target_model, target_max_n_tokens=150,
             defense_preloaded_model = preloaded_model
         if args.target_model == args.backtranslation_infer_model:
             defense_preloaded_model = targetLM.model
-        defense = load_defense(args, defense_method, defense_preloaded_model)
-        targetLM = DefensedTargetLM(target_model=targetLM,
+
+        defense_config = args_to_defense_config(args)
+        defense = load_defense(defense_config, defense_preloaded_model)
+        targetLM = DefendedTargetLM(target_model=targetLM,
                                     defense=defense)
 
     return targetLM
@@ -62,4 +63,3 @@ def get_recursive_key(obj, key, delim='.'):
             return None
         obj = obj[k]
     return obj
-

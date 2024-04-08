@@ -1,15 +1,14 @@
 import argparse
-import sys
-sys.path.append("../")
-from PAIR.system_prompts import get_attacker_system_prompt
-from PAIR.loggers import WandBLogger
-from PAIR.judges import load_judge
-from PAIR.conversers import load_attack_and_target_models
-from PAIR.common import process_target_response, get_init_msg, conv_template
 import csv
 import json
 from tqdm import tqdm
 import math
+from llm_jailbreaking_defense import load_judge
+from PAIR.system_prompts import get_attacker_system_prompt
+from PAIR.loggers import WandBLogger
+from PAIR.conversers import load_attack_and_target_models
+from PAIR.common import process_target_response, get_init_msg, conv_template
+from arguments import get_parser
 
 
 def jailbreak(args, attackLM, targetLM, judgeLM, goal, target, logger):
@@ -90,8 +89,9 @@ def jailbreak(args, attackLM, targetLM, judgeLM, goal, target, logger):
 
 
 def main(args):
-    if 'csv' in args.harmful_behavior_path:
-        csv_reader = csv.reader(open(args.harmful_behavior_path))
+    import pdb; pdb.set_trace()
+    if 'csv' in args.load_data_path:
+        csv_reader = csv.reader(open(args.load_data_path))
         harmful_behavior_list = []
         for line in csv_reader:
             if line[2] == 'target':
@@ -99,25 +99,29 @@ def main(args):
             harmful_behavior_list.append({
                 'id': line[0], 'goal': line[1], 'target': line[2],
                 'category': line[3], 'original idx': line[4]})
-    if 'json' in args.harmful_behavior_path:
-        harmful_behavior_list = json.load(open(args.harmful_behavior_path))
+    if 'json' in args.load_data_path:
+        harmful_behavior_list = json.load(open(args.load_data_path))
 
     attackLM, targetLM = load_attack_and_target_models(args)
 
 
     for item in tqdm(harmful_behavior_list[:args.num_examples]):
-        if int(item['id']) < args.start_index:
+        if int(item['id']) < args.starting_index:
                 continue
         if "jailbreaking" in item:
             continue
         goal = item['goal']
         target = item['target']
 
-        args.goal = goal
         args.target_str = target
         args.index = item['id']
         args.category = item['category']
-        judgeLM = load_judge(args)
+        args.goal = goal
+        
+        assert isinstance(args.judge_name, str) or len(args.judge_name) == 1, "PAIR only support a single judge"
+        args.judge_name = args.judge_name[0]
+
+        judgeLM = load_judge(args.judge_name, goal)
         system_prompt = get_attacker_system_prompt(
             goal,
             target
@@ -127,19 +131,21 @@ def main(args):
         item['jailbreaking'], item['response'] = jailbreak(
             args, attackLM, targetLM, judgeLM, goal, target, logger)
 
-        if args.save_output_path is None:
+        if args.save_result_path is None:
             output_path = (
                 f'output/pair/{args.target_model}_{args.judge_model}_'
                 f'{args.defense_method}.json')
         else:
-            output_path = args.save_output_path
+            output_path = args.save_result_path
         with open(output_path, 'w+') as file:
             json.dump(harmful_behavior_list, file)
 
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser()
+    parser = get_parser(target_model=True, defense=True, judge=True)
+    # parser = argparse.ArgumentParser()
+
 
     ########### Attack model parameters ##########
     parser.add_argument(
@@ -148,7 +154,7 @@ if __name__ == '__main__':
         help = "Name of attacking model.",
         choices=["vicuna", "vicuna-13b-v1.5", "llama-2", "llama-2-13b",
                  "gpt-3.5-turbo", "gpt-4",
-                 "claude-instant-1", "claude-2", "palm-2"]
+                 "claude-instant-1", "claude-2"]
     )
     parser.add_argument(
         "--attack_max_n_tokens",
@@ -164,48 +170,48 @@ if __name__ == '__main__':
     )
     ##################################################
 
-    ########### Target model parameters ##########
-    parser.add_argument(
-        "--target_model",
-        default = "vicuna",
-        help = "Name of target model.",
-        choices=["vicuna", "llama-2", "llama-2-13b", "gpt-3.5-turbo", "gpt-3.5-turbo-0613","gpt-4",
-                 "claude-instant-1","claude-2", "palm-2"]
-    )
-    parser.add_argument(
-        "--target_max_n_tokens",
-        type = int,
-        default = 150,
-        help = "Maximum number of generated tokens for the target."
-    )
-    parser.add_argument('--defense_method', type=str, default='None',
-                        help='Defense method applied on the target model. No defense by default, choose from "None", "smoothLLM", "backtranslation", "backtranslation_with_threshold_[a negative float numer]","self_check_response"]')
-    parser.add_argument('--backtranslation_threshold', type=float, default=-math.inf)
-    parser.add_argument('--backtranslation_infer_model', type=str, default='vicuna')
-    parser.add_argument('--return_new_response_anyway', action='store_true') # turned off by default
+    # ########### Target model parameters ##########
+    # parser.add_argument(
+    #     "--target_model",
+    #     default = "vicuna",
+    #     help = "Name of target model.",
+    #     choices=["vicuna", "llama-2", "llama-2-13b", "gpt-3.5-turbo", "gpt-4",
+    #              "claude-instant-1","claude-2"]
+    # )
+    # parser.add_argument(
+    #     "--target_max_n_tokens",
+    #     type = int,
+    #     default = 150,
+    #     help = "Maximum number of generated tokens for the target."
+    # )
+    # parser.add_argument('--defense_method', type=str, default='None',
+    #                     help='Defense method applied on the target model. No defense by default, choose from "None", "SmoothLLM", "backtranslation", "backtranslation_with_threshold_[a negative float numer]","response_check"]')
+    # parser.add_argument('--backtranslation_threshold', type=float, default=-math.inf)
+    # parser.add_argument('--backtranslation_infer_model', type=str, default='vicuna')
+    # parser.add_argument('--return_new_response_anyway', action='store_true') # turned off by default
 
-    ##################################################
+    # ##################################################
 
-    ############ Judge model parameters ##########
-    parser.add_argument(
-        "--judge_model",
-        default="gpt-4",
-        help="Name of judge model.",
-        choices=["gpt-3.5-turbo", "gpt-4","gpt-4-1106-preview", "no-judge", "matching"]
-    )
-    parser.add_argument(
-        "--judge_max_n_tokens",
-        type = int,
-        default = 10,
-        help = "Maximum number of tokens for the judge."
-    )
-    parser.add_argument(
-        "--judge_temperature",
-        type=float,
-        default=0,
-        help="Temperature to use for judge."
-    )
-    ##################################################
+    # ############ Judge model parameters ##########
+    # parser.add_argument(
+    #     "--judge_model",
+    #     default="gpt-4",
+    #     help="Name of judge model.",
+    #     choices=["gpt-3.5-turbo", "gpt-4","gpt-4-1106-preview", "no-judge", "matching"]
+    # )
+    # parser.add_argument(
+    #     "--judge_max_n_tokens",
+    #     type = int,
+    #     default = 10,
+    #     help = "Maximum number of tokens for the judge."
+    # )
+    # parser.add_argument(
+    #     "--judge_temperature",
+    #     type=float,
+    #     default=0,
+    #     help="Temperature to use for judge."
+    # )
+    # ##################################################
 
     ########### PAIR parameters ##########
     parser.add_argument(
@@ -227,30 +233,15 @@ if __name__ == '__main__':
         default = 3,
         help = "Number of iterations to run the attack."
     )
-    parser.add_argument(
-        "--harmful_behavior_path",
-        type = str,
-        default = "",
-        help = "path to the list of harmful goals"
-    )
-    parser.add_argument(
-        "--start_index",
-        type=int,
-        default=0
-    )
-    parser.add_argument(
-        "--num_examples",
-        type=int,
-        default=80
-    )
     ##################################################
 
-    parser.add_argument('--save_output_path', type=str)
-    parser.add_argument('--max_memory', type=int, default=None)
-    parser.add_argument('--paraphrase_model', type=str, default='gpt-3.5-turbo')
-    parser.add_argument('--self_check_threshod', type=int, default=5)
+    # parser.add_argument('--save_output_path', type=str)
+    # parser.add_argument('--max_memory', type=int, default=None)
+    # parser.add_argument('--paraphrase_model', type=str, default='gpt-3.5-turbo')
+    # parser.add_argument('--response_check_threshold', type=int, default=5)
 
-    # TODO: Add a quiet option to suppress print statement
+    # # TODO: Add a quiet option to suppress print statement
     args = parser.parse_args()
 
+    # main(args)
     main(args)

@@ -645,7 +645,7 @@ def parse_arguments(parser=None, return_parsed_args=True):
                         choices=["vicuna", "vicuna-13b-v1.5",
                                  "llama-2", "llama-2-13b"])
     parser.add_argument('--defense_method', type=str, default=None,
-                        help='Defense method applied on the target model. No defense by default, choose from "None", "smoothLLM", "backtranslation", "backtranslation_with_threshold_[a negative float numer]","self_check_prompt", "self_check_response"]')
+                        help='Defense method applied on the target model. No defense by default, choose from "None", "SmoothLLM", "backtranslation", "backtranslation_with_threshold_[a negative float numer]","self_check_prompt", "response_check"]')
     parser.add_argument("--harmful_behavior_path", type=str)
     parser.add_argument("--save_output_path", type=str)
     parser.add_argument("--force_overwrite", action='store_true')

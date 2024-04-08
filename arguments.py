@@ -3,11 +3,9 @@ import math
 
 
 def add_judge_args(parser):
-    parser.add_argument('--judge_model', nargs='+',
-                        default=['gpt-4'],
-                        choices=['gpt-3.5-turbo', 'gpt-4','gpt-4-1106-preview',
-                                 'gpt-4_quality', 'no-judge', 'matching',
-                                 'original-matching', 'openai_policy_gpt4_judge'])
+    parser.add_argument('--judge_name', nargs='+',
+                        default=['pair@gpt-4'],
+                        help='name of the judge to be used: [judge_method]@[judge_model]')
     parser.add_argument('--judge_max_n_tokens', type=int, default=10,
                         help='Maximum number of tokens for the judge.')
     parser.add_argument('--judge_temperature', type=float, default=0,
@@ -46,16 +44,20 @@ def add_target_model_args(parser):
 def add_defense_args(parser):
     parser.add_argument('--defense_method', type=str, default='None',
                         help='Defense method applied on the target model. '
-                        'No defense by default, choose from "None", "smoothLLM", '
+                        'No defense by default, choose from "None", "SmoothLLM", '
                         '"backtranslation", '
                         '"backtranslation_with_threshold_[a negative float numer]", '
-                        '"self_check_response", '
+                        '"response_check", '
                         '"paraphrase_prompt"]')
-    parser.add_argument('--backtranslation_threshold', type=float, default=-math.inf)
+    parser.add_argument('--backtranslation_threshold', type=float, default=-2.0)
+    parser.add_argument('--backtranslation_new_response_length', type=int, default=None)
     parser.add_argument('--backtranslation_infer_model', type=str, default='vicuna')
     parser.add_argument('--paraphrase_model', type=str, default='gpt-3.5-turbo')
     parser.add_argument('--return_new_response_anyway', action='store_true') # turned off by default
-    parser.add_argument('--self_check_threshold', type=int, default=5)
+    parser.add_argument('--response_check_threshold', type=int, default=5)
+    parser.add_argument('--SmoothLLM_perturbation_num_samples', type=int, default=3)
+    parser.add_argument('--SmoothLLM_perturbation_ratio', type=float, default=0.1)
+    parser.add_argument('--SmoothLLM_perturbation_type', type=str, default='swap')
 
 
 def add_data_args(parser):
@@ -68,6 +70,13 @@ def add_data_args(parser):
 
 
 def parse_args(target_model=False, defense=False, judge=False):
+    parser = get_parser(target_model, defense, judge)
+
+    args = parser.parse_args()
+    print('Arguments:', args)
+    return args
+
+def get_parser(target_model=False, defense=False, judge=False):
     parser = argparse.ArgumentParser()
 
     add_data_args(parser)
@@ -83,6 +92,4 @@ def parse_args(target_model=False, defense=False, judge=False):
     parser.add_argument('--verbose', action='store_true')
     parser.add_argument('--force_overwrite', action='store_true')
 
-    args = parser.parse_args()
-    print('Arguments:', args)
-    return args
+    return parser

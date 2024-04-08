@@ -1,15 +1,13 @@
 import json
 import os
 from tqdm.auto import tqdm
-from types import SimpleNamespace
-
-from judge import load_judge
+from llm_jailbreaking_defense import load_judge
 from utils import get_recursive_key
 from arguments import parse_args
 
 
 def judge_on_data(goal_key, inferences, prompt_key, response_key,
-                  judge_model, judge_max_n_tokens, judge_temperature,
+                  judge_name, judge_max_n_tokens, judge_temperature,
                   reference_key=None, verbose=False):
     results = []
     for i, inference_item in enumerate(tqdm(
@@ -26,16 +24,15 @@ def judge_on_data(goal_key, inferences, prompt_key, response_key,
             print(reference_key)
             reference = get_recursive_key(inference_item, reference_key)
 
-        config = SimpleNamespace(judge_model=judge_model,
-                                 judge_max_n_tokens=judge_max_n_tokens,
-                                 judge_temperature=judge_temperature)
-        judge = load_judge(config, goal=goal)
+        judge = load_judge(
+            judge_name, goal,
+            max_n_tokens=judge_max_n_tokens,  temperature=judge_temperature)
         if reference is not None:
             rating = judge.score([prompt], [response], [reference])[0]
         else:
             rating = judge.score([prompt], [response])[0]
 
-        inference_item[f'{judge.judge_name}_rating'] = rating
+        inference_item[f'{judge_name}_rating'] = rating
         results.append(inference_item)
 
     return results
@@ -55,17 +52,17 @@ def main(args):
             inferences = inferences[:args.num_examples]
 
     results = inferences
-    for judge_model in args.judge_model:
+    for judge_name in args.judge_name:
         results = judge_on_data(goal_key=args.goal_key,
                                 inferences=results,
                                 prompt_key=args.prompt_key,
                                 response_key=args.response_key,
-                                judge_model=judge_model,
+                                judge_name=judge_name,
                                 judge_max_n_tokens=args.judge_max_n_tokens,
                                 judge_temperature=args.judge_temperature,
                                 verbose=args.verbose)
-        avg_rating = sum([a[f"{judge_model}_rating"] for a in results])/len(results)
-        print(f"Average rating from {judge_model} is {avg_rating}")
+        avg_rating = sum([a[f"{judge_name}_rating"] for a in results])/len(results)
+        print(f"Average rating from {judge_name} is {avg_rating}")
 
     if '/' in args.save_result_path:
         os.makedirs(os.path.dirname(args.save_result_path), exist_ok=True)
