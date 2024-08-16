@@ -38,7 +38,7 @@ def add_target_model_args(parser):
                         help='Maximum number of generated tokens for the target.')
     parser.add_argument('--max_memory', type=int, default=None)
     parser.add_argument('--target_model_batch_size', type=int, default=2)
-    parser.add_argument('--no_system_prompt', '--no_system_prompt', action='store_true')
+    parser.add_argument('--pap_template', action='store_true')
 
 
 def add_defense_args(parser):

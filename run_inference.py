@@ -1,16 +1,16 @@
 import json
 import os
+import time
 from tqdm.auto import tqdm
 
 from arguments import parse_args
-from utils import load_target_model, load_prompts, get_recursive_key
-import time
+from utils import load_target_model, load_prompts, get_recursive_key, PAPTemplate
 
 
 def inference_on_data(args, data, prompt_key, target_model,
                       defense_method, response_key, target_max_n_tokens=150,
                       existing_response_key=None,
-                      max_memory=None, add_system_prompt=True, verbose=False):
+                      max_memory=None, pap_template=False, verbose=False):
     """
     Generate outputs on a list of data.
     Each item in data is a dictionary.
@@ -18,7 +18,9 @@ def inference_on_data(args, data, prompt_key, target_model,
 
     target_lm = load_target_model(
         args, target_model, target_max_n_tokens, max_memory,
-        defense_method=defense_method, add_system_prompt=add_system_prompt)
+        defense_method=defense_method)
+    if pap_template:
+        target_lm.template = PAPTemplate(target_lm)
 
     results = []
     begin = time.time()
@@ -74,7 +76,7 @@ def main(args):
         target_max_n_tokens=args.target_max_n_tokens,
         max_memory=args.max_memory,
         verbose=args.verbose,
-        add_system_prompt=not args.no_system_prompt)
+        pap_template=args.pap_template)
 
     if '/' in args.save_result_path:
         os.makedirs(os.path.dirname(args.save_result_path), exist_ok=True)
